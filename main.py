@@ -53,17 +53,29 @@ class Platforms:
 platforms = []
 pillars = []
 
-for i in range(0,9):
+# Level Generation
+for i in range(0, 11):
     platform = Platforms(SCREEN_WIDTH * i)
     platforms.append(platform)
 
+    # Pillars created at random x coordinates on each platform
     pillar1 = Pillars(random.randint(300 * i, SCREEN_WIDTH * i))
+    if i > 0:
+        if pillar1.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar1.x < -224:
+            pillar1.x += 448
+
     pillars.append(pillar1)
+
     if random.randint(1, 100) > 40:
         pillar2 = Pillars(random.randint(300 * i, SCREEN_WIDTH * i))
+        if i > 0:
+            if pillar2.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar2.x < -224:
+                pillar2.x += 448
+
         pillars.append(pillar2)
 
 # Run until quit
+currentIndex = 11
 running = True
 while running:
 
@@ -76,24 +88,35 @@ while running:
     screen.fill((100, 20, 255))
 
     # Draw a solid blue circle in the center
-    pygame.draw.circle(screen, (0, 0, 255), (250, 250), 75)
+    # pygame.draw.circle(screen, (0, 0, 255), (250, 250), 75)
 
-    for i in range(0, 9):
+    for i in range(0, len(platforms)):
+        platforms[i].draw()
         platforms[i].draw()
         platforms[i].move()
-        pillars[i].draw()
-        pillars[i].move()
 
         if platforms[i].x < -SCREEN_WIDTH:
             platforms.remove(platforms[i])
 
             platform = Platforms(SCREEN_WIDTH * i)
             platforms.append(platform)
+
+    for i in range(0, len(pillars)):
+        pillars[i].draw()
+        pillars[i].move()
+
+        ### NEEDS WORK - TRYING TO INCREASE STABILITY AND PREVENT OVERLAPPING PILLARS
         if pillars[i].x < -SCREEN_WIDTH:
             pillars.remove(pillars[i])
 
-            pillar = Pillars(random.randint(300, SCREEN_WIDTH - 112))
+            pillar = Pillars(random.randint(300 * (i + 3), SCREEN_WIDTH * (i + 3)))
+            if i > 0:
+                if pillar.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar.x < -224:
+                    pillar.x += 336
+
             pillars.append(pillar)
+
+    currentIndex += 12
 
     # Flip the display
     pygame.display.flip()
