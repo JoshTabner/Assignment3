@@ -2,47 +2,74 @@
 
 # Initialise pygame
 import random
-
 import pygame
+from pygame.locals import *
 
 pygame.init()
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+RED = (255, 0, 0)
 
 SCREEN_WIDTH = 1270
 SCREEN_HEIGHT = 720
 
+SCROLL_SPEED = 1
+GRAVITY = 0.1
+
 # Draw window
 screen = pygame.display.set_mode([1270, 720])
+
+# Define pressed_keys
+pressed_key = pygame.key.get_pressed()
 
 
 class Pillars:
     # Represents every 'pillar' created in game
-    def __init__(self, startX):
+    def __init__(self, startX, low=112, high=300):
         # Initialisation
         self.image = pygame.image.load("Assets/pillar.png").convert_alpha()
         self.x = startX
-        self.y = SCREEN_HEIGHT - random.randint(250, 450)
+        self.high = high
+        self.low = low
+        self.y = SCREEN_HEIGHT - random.randint(low, high)
 
     def move(self):
-        self.x -= 1
+        self.x -= SCROLL_SPEED
+
+    def draw(self):
+        # Draw the sprite
+        screen.blit(self.image, (self.x, self.y))
+
+    def random_y(self):
+        self.y = SCREEN_HEIGHT - random.randint(self.low, self.high)
+
+    def higher(self, new_high):
+        self.high = new_high
+
+
+class Platforms:
+    # Represents every 'platform' created in game
+    def __init__(self, start_x):
+        # Initialisation
+        self.image = pygame.image.load("Assets/platform.png").convert_alpha()
+        self.x = start_x
+        self.y = SCREEN_HEIGHT - 112
+
+    def move(self):
+        self.x -= SCROLL_SPEED
 
     def draw(self):
         # Draw the sprite
         screen.blit(self.image, (self.x, self.y))
 
 
-class Platforms:
-    # Represents every 'platform' created in game
-    def __init__(self, startX):
-        # Initialisation
-        self.image = pygame.image.load("Assets/platform.png").convert_alpha()
-        self.x = startX
-        self.y = SCREEN_HEIGHT - 112
-
-    def move(self):
-        self.x -= 1
+class Player:
+    # Represents the player object
+    def __init__(self):
+        self.image = pygame.image.load("Assets/player.png").convert_alpha()
+        self.x = SCREEN_WIDTH/2
+        self.y = SCREEN_HEIGHT/2
 
     def draw(self):
         # Draw the sprite
@@ -50,32 +77,15 @@ class Platforms:
 
 
 # Define the level
-platforms = []
-pillars = []
+platforms = (Platforms(0), Platforms(SCREEN_WIDTH))
+pillars = (
+Pillars(SCREEN_WIDTH * 0.25), Pillars(SCREEN_WIDTH * 0.5), Pillars(SCREEN_WIDTH * 0.75), Pillars(SCREEN_WIDTH),
+Pillars(SCREEN_WIDTH * 1.25), Pillars(SCREEN_WIDTH * 1.5), Pillars(SCREEN_WIDTH * 1.75), Pillars(SCREEN_WIDTH * 2))
 
-# Level Generation
-for i in range(0, 11):
-    platform = Platforms(SCREEN_WIDTH * i)
-    platforms.append(platform)
-
-    # Pillars created at random x coordinates on each platform
-    pillar1 = Pillars(random.randint(300 * i, SCREEN_WIDTH * i))
-    if i > 0:
-        if pillar1.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar1.x < -224:
-            pillar1.x += 448
-
-    pillars.append(pillar1)
-
-    if random.randint(1, 100) > 40:
-        pillar2 = Pillars(random.randint(300 * i, SCREEN_WIDTH * i))
-        if i > 0:
-            if pillar2.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar2.x < -224:
-                pillar2.x += 448
-
-        pillars.append(pillar2)
+player = Player()
 
 # Run until quit
-currentIndex = 11
+currentIndex = 1
 running = True
 while running:
 
@@ -84,40 +94,38 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Fill the background with white
-    screen.fill((100, 20, 255))
+    # Fill the background with purple
+    screen.fill((190, 170, 240))
 
-    # Draw a solid blue circle in the center
-    # pygame.draw.circle(screen, (0, 0, 255), (250, 250), 75)
+    # Draw the player
 
-    for i in range(0, len(platforms)):
-        platforms[i].draw()
-        platforms[i].draw()
-        platforms[i].move()
+    for platform in platforms:
+        platform.draw()
+        platform.move()
 
-        if platforms[i].x < -SCREEN_WIDTH:
-            platforms.remove(platforms[i])
+        if platform.x < -SCREEN_WIDTH:
+            platform.x += SCREEN_WIDTH * 2
+            currentIndex += 1
 
-            platform = Platforms(SCREEN_WIDTH * i)
-            platforms.append(platform)
+    for pillar in pillars:
+        pillar.draw()
+        pillar.move()
 
-    for i in range(0, len(pillars)):
-        pillars[i].draw()
-        pillars[i].move()
+        if currentIndex % 5 == 0:
+            pillar.higher(pillar.high * 1.2)
 
-        ### NEEDS WORK - TRYING TO INCREASE STABILITY AND PREVENT OVERLAPPING PILLARS
-        if pillars[i].x < -SCREEN_WIDTH:
-            pillars.remove(pillars[i])
+        if pillar.high > SCREEN_HEIGHT / 2:
+            pillar.higher(SCREEN_HEIGHT / 2)
 
-            pillar = Pillars(random.randint(300 * (i + 3), SCREEN_WIDTH * (i + 3)))
-            if i > 0:
-                if pillar.x - pillars[i - 1].x < 224 or pillars[i - 1].x - pillar.x < -224:
-                    pillar.x += 336
+        if pillar.x < -SCREEN_WIDTH:
+            pillar.x += SCREEN_WIDTH * 2
+            pillar.random_y()
 
-            pillars.append(pillar)
+    player.draw()
+    player.y += GRAVITY
 
-    currentIndex += 12
 
+    print(currentIndex)
     # Flip the display
     pygame.display.flip()
 
