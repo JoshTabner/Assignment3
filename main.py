@@ -2,6 +2,8 @@
 
 # Initialise pygame
 import random
+import sys
+
 import pygame
 from pygame.locals import *
 
@@ -15,7 +17,7 @@ SCREEN_WIDTH = 1270
 SCREEN_HEIGHT = 720
 
 SCROLL_SPEED = 1
-GRAVITY = 0.1
+GRAVITY = 0.77
 
 # Draw window
 screen = pygame.display.set_mode([1270, 720])
@@ -26,13 +28,16 @@ pressed_key = pygame.key.get_pressed()
 
 class Pillars:
     # Represents every 'pillar' created in game
-    def __init__(self, startX, low=112, high=300):
+    def __init__(self, start_x, low=112, high=300):
         # Initialisation
+        # pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("Assets/pillar.png").convert_alpha()
-        self.x = startX
+        self.x = start_x
         self.high = high
         self.low = low
         self.y = SCREEN_HEIGHT - random.randint(low, high)
+        self.rect = self.image.get_rect()
+        self.rect.center = (28, 56)
 
     def move(self):
         self.x -= SCROLL_SPEED
@@ -55,6 +60,7 @@ class Platforms:
         self.image = pygame.image.load("Assets/platform.png").convert_alpha()
         self.x = start_x
         self.y = SCREEN_HEIGHT - 112
+        self.rect = self.image.get_rect()
 
     def move(self):
         self.x -= SCROLL_SPEED
@@ -67,20 +73,29 @@ class Platforms:
 class Player:
     # Represents the player object
     def __init__(self):
+        # pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load("Assets/player.png").convert_alpha()
-        self.x = SCREEN_WIDTH/2
-        self.y = SCREEN_HEIGHT/2
+        self.x = SCREEN_WIDTH / 2
+        self.y = SCREEN_HEIGHT / 2
+
+        self.rect = self.image.get_rect()
+        self.rect.center = (28, 28)
 
     def draw(self):
         # Draw the sprite
         screen.blit(self.image, (self.x, self.y))
 
+    def hit_by(self, hit):
+        return ((self.x + 28) - hit.x) ** 2 + ((self.y + 56) - hit.y) ** 2 < 1960
+
 
 # Define the level
 platforms = (Platforms(0), Platforms(SCREEN_WIDTH))
 pillars = (
-Pillars(SCREEN_WIDTH * 0.25), Pillars(SCREEN_WIDTH * 0.5), Pillars(SCREEN_WIDTH * 0.75), Pillars(SCREEN_WIDTH),
-Pillars(SCREEN_WIDTH * 1.25), Pillars(SCREEN_WIDTH * 1.5), Pillars(SCREEN_WIDTH * 1.75), Pillars(SCREEN_WIDTH * 2))
+    Pillars(SCREEN_WIDTH * 0.25), Pillars(SCREEN_WIDTH * 0.5), Pillars(SCREEN_WIDTH * 0.75), Pillars(SCREEN_WIDTH),
+    Pillars(SCREEN_WIDTH * 1.25), Pillars(SCREEN_WIDTH * 1.5), Pillars(SCREEN_WIDTH * 1.75), Pillars(SCREEN_WIDTH * 2))
+
+
 
 player = Player()
 
@@ -94,10 +109,13 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    pressed_keys = pygame.key.get_pressed()
+
     # Fill the background with purple
     screen.fill((190, 170, 240))
 
-    # Draw the player
+    # Collision
+
 
     for platform in platforms:
         platform.draw()
@@ -111,8 +129,18 @@ while running:
         pillar.draw()
         pillar.move()
 
+        if player.hit_by(pillar):
+            print("Will show text")
+             # Show text here
+
         if currentIndex % 5 == 0:
             pillar.higher(pillar.high * 1.2)
+        if currentIndex >= 25:
+            SCROLL_SPEED = 1.25
+        elif currentIndex >= 50:
+            SCROLL_SPEED = 1.5
+        elif currentIndex >= 75:
+            SCROLL_SPEED = 2
 
         if pillar.high > SCREEN_HEIGHT / 2:
             pillar.higher(SCREEN_HEIGHT / 2)
@@ -121,11 +149,17 @@ while running:
             pillar.x += SCREEN_WIDTH * 2
             pillar.random_y()
 
+    if pressed_keys[K_SPACE]:
+        player.y -= 1
+
+    if player.y < SCREEN_HEIGHT - 168:
+        player.y += GRAVITY
+    else:
+        player.y = SCREEN_HEIGHT - 168
+
     player.draw()
-    player.y += GRAVITY
 
-
-    print(currentIndex)
+    #print(currentIndex)
     # Flip the display
     pygame.display.flip()
 
