@@ -5,14 +5,28 @@ import random
 import sys
 
 import pygame
+from pygame import mixer
 from pygame.locals import *
 
 pygame.init()
 pygame.font.init()
 
+# Sounds
+mixer.init()
+mixer.music.load("Assets/background.mp3")
+mixer.music.set_volume(0.5)
+mixer.music.play(-1)
+
+jump_sound = pygame.mixer.Sound("Assets/jump.wav")
+pygame.mixer.Sound.set_volume(jump_sound, 0.05)
+death_sound = pygame.mixer.Sound("Assets/death.wav")
+pygame.mixer.Sound.set_volume(death_sound, 0.15)
+
+# Score
 text_display = pygame.font.SysFont('Arial', 30)
 score = 0
 
+# Colours & Constants
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
@@ -60,6 +74,7 @@ class Pillars:
 
 
 class ReversePillars(Pillars):
+    # For every pillar on the ceiling
     def __init__(self, start_x, low=-344, high=-140):
         super().__init__(start_x, low, high)
         self.image = pygame.image.load("Assets/pillar.png").convert_alpha()
@@ -138,6 +153,7 @@ player = Player()
 # Run until quit
 currentIndex = 1
 running = True
+dead = False
 while running:
     # Has the close button been pressed?
     for event in pygame.event.get():
@@ -151,13 +167,14 @@ while running:
         platform.draw()
         platform.move()
 
-        if pygame.Rect(platform.x, platform.y, 1270, 112).collidepoint(player.x, player.y + 56):
+        if pygame.Rect(platform.x, platform.y, 1270, 112).collidepoint(player.x, player.y + 56) and not dead:
             pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
             SCROLL_SPEED = 0
             GRAVITY = 0
 
             text_surface = text_display.render("YOU HAVE FAILED", False, WHITE)
             screen.blit(text_surface, (SCREEN_WIDTH/2 - 30, SCREEN_HEIGHT/2-30))
+            dead = True
 
         if platform.x < -SCREEN_WIDTH:
             platform.x += SCREEN_WIDTH * 2
@@ -166,6 +183,27 @@ while running:
     for pillar in pillars:
         pillar.draw()
         pillar.move()
+
+        if not dead:
+            if pillar.reverse and pygame.Rect(pillar.x, pillar.y, 112, 400).collidepoint(player.x, player.y):
+                pygame.mixer.Sound.play(death_sound)
+                pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+                SCROLL_SPEED = 0
+                GRAVITY = 0
+
+                text_surface = text_display.render("YOU HAVE FAILED", False, WHITE)
+                screen.blit(text_surface, (SCREEN_WIDTH/2 - 30, SCREEN_HEIGHT/2-30))
+                dead = True
+
+            elif not pillar.reverse and pygame.Rect(pillar.x, pillar.y, 112, 400).collidepoint(player.x, player.y + 56):
+                pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+                pygame.mixer.Sound.play(death_sound)
+                SCROLL_SPEED = 0
+                GRAVITY = 0
+
+                text_surface = text_display.render("YOU HAVE FAILED", False, WHITE)
+                screen.blit(text_surface, (SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 - 30))
+                dead = True
 
         #  Gradually increase random range
         if currentIndex % 5 == 0:
@@ -192,11 +230,20 @@ while running:
             pillar.random_y()
 
     key_pressed = pygame.key.get_pressed()
-    if key_pressed[K_SPACE]:
+    if key_pressed[K_SPACE] and not dead:
+        pygame.mixer.Sound.play(jump_sound)
         player.y -= 0.6
 
     player.y += GRAVITY
     player.draw()
+
+    if dead:
+        pygame.draw.rect(screen, BLACK, (0, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+        SCROLL_SPEED = 0
+        GRAVITY = 0
+
+        text_surface = text_display.render("YOU HAVE FAILED", False, WHITE)
+        screen.blit(text_surface, (SCREEN_WIDTH / 2 - 30, SCREEN_HEIGHT / 2 - 30))
 
     # print(player.dy)
 
