@@ -161,7 +161,7 @@ while running:
             running = False
 
     # Fill the background with purple
-    screen.fill((190, 170, 240))
+    screen.fill((100, 100, 240))
 
     for platform in platforms:
         platform.draw()
